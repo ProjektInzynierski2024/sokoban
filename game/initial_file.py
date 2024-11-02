@@ -1,31 +1,43 @@
 import pygame
 
-from generator.initial_file import generate_level
+from Board import Board
 
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 800
-TILE_SIZE = 40
+SCREEN_WIDTH = 900
+SCREEN_HEIGHT = 900
+TILE_SIZE = 90
 
 pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Sokoban")
 clock = pygame.time.Clock()
 dt = 0
-
+wall_image = pygame.image.load('bricks.png').convert()
+wall_image = pygame.transform.scale(wall_image, (TILE_SIZE, TILE_SIZE))
 player_pos = pygame.Vector2(screen.get_width() / 2, screen.get_height() / 2)
 
 
-def draw_level(level):
-    for y, row in enumerate(level):
+def draw_level(board):
+    grid = board.grid
+    rows = len(grid)
+    columns = len(grid[0])
+
+    offset_x = (SCREEN_WIDTH - columns * TILE_SIZE) // 2
+    offset_y = (SCREEN_HEIGHT - rows * TILE_SIZE) // 2
+
+    for y, row in enumerate(grid):
         for x, tile in enumerate(row):
-            if tile == 1:
-                pygame.draw.rect(screen, "green", (x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
-            if tile == 2:
-                pygame.draw.rect(screen, "red", (x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
-            if tile == 3:
-                pygame.draw.rect(screen, "blue", (x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
-            else:
-                pygame.draw.rect(screen, "gray", (x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
+            tile_value = tile.get_value()
+            color = "gray"
+            if tile_value == 1:
+                color = "green"
+                pygame.draw.rect(screen, color,
+                                 (offset_x + x * TILE_SIZE, offset_y + y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
+            elif tile_value == 2:
+                screen.blit(wall_image, (offset_x + x * TILE_SIZE, offset_y + y * TILE_SIZE))
+            elif tile_value == 3:
+                color = "blue"
+                pygame.draw.rect(screen, color,
+                                 (offset_x + x * TILE_SIZE, offset_y + y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
 
 def main():
     running = True
@@ -35,10 +47,7 @@ def main():
     #2 - box
     #3 - place to put box
 
-
-    level = [[1,2,0,1],
-             [0,0,0,0],
-             [1,1,3,1]]
+    board = Board(3)
 
     while running:
         for event in pygame.event.get():
@@ -46,7 +55,7 @@ def main():
                 running = False
 
         screen.fill((0, 0, 0))
-        draw_level(level)
+        draw_level(board)
         pygame.display.flip()
 
     pygame.draw.circle(screen, "pink", player_pos, 40)
