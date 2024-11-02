@@ -1,65 +1,97 @@
 import pygame
 
-from generator.initial_file import generate_level
+TITLE_BAR_SIZE_IN_PIXELS = 60
+TILES_PER_ROW = 9
 
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 800
-TILE_SIZE = 40
+def initialize_pygame_display():
+    pygame.init()
+    info = pygame.display.Info()
+    width, height = info.current_w, info.current_h - TITLE_BAR_SIZE_IN_PIXELS
+    pygame.display.set_caption("Sokoban")
+    return pygame.display.set_mode((width, height), pygame.RESIZABLE),  width, height
 
-pygame.init()
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Sokoban")
-clock = pygame.time.Clock()
-dt = 0
 
-player_pos = pygame.Vector2(screen.get_width() / 2, screen.get_height() / 2)
+display, display_width, display_height = initialize_pygame_display()
 
+calculate_tile_size = min(
+    display_width // TILES_PER_ROW,
+    (display_height - 100) // TILES_PER_ROW
+)
+
+TILE_SIZE = calculate_tile_size
+tile_grid_width = TILES_PER_ROW * TILE_SIZE
+tile_grid_height = TILES_PER_ROW * TILE_SIZE
+
+left_corner_x_coordinate = (display_width - tile_grid_width) // 2
+left_corner_y_coordinate = (display_height - tile_grid_height) // 2
 
 def draw_level(level):
     for y, row in enumerate(level):
         for x, tile in enumerate(row):
+            tile_x_coordinate = left_corner_x_coordinate + x * TILE_SIZE
+            tile_y_coordinate = left_corner_y_coordinate + y * TILE_SIZE
+
             if tile == 1:
-                pygame.draw.rect(screen, "green", (x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
-            if tile == 2:
-                pygame.draw.rect(screen, "red", (x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
-            if tile == 3:
-                pygame.draw.rect(screen, "blue", (x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
+                pygame.draw.rect(display, "green", (tile_x_coordinate, tile_y_coordinate, TILE_SIZE, TILE_SIZE))
+            elif tile == 2:
+                pygame.draw.rect(display, "red", (tile_x_coordinate, tile_y_coordinate, TILE_SIZE, TILE_SIZE))
+            elif tile == 3:
+                pygame.draw.rect(display, "blue", (tile_x_coordinate, tile_y_coordinate, TILE_SIZE, TILE_SIZE))
             else:
-                pygame.draw.rect(screen, "gray", (x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
+                pygame.draw.rect(display, "gray", (tile_x_coordinate, tile_y_coordinate, TILE_SIZE, TILE_SIZE))
+
+
+level = [
+    [1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 2, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 3, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1]
+]
+
+def is_collision(new_position):
+    grid_x = int((new_position.x - left_corner_x_coordinate) / TILE_SIZE)
+    grid_y = int((new_position.y - left_corner_y_coordinate) / TILE_SIZE)
+
+    return level[grid_y][grid_x] == 1
+
 
 def main():
     running = True
-
-    #0 - movement area
-    #1 - wall
-    #2 - box
-    #3 - place to put box
-
-
-    level = [[1,2,0,1],
-             [0,0,0,0],
-             [1,1,3,1]]
+    clock = pygame.time.Clock()
+    player_position = pygame.Vector2(display.get_width() / 2, display.get_height() / 2)
 
     while running:
+        delta_time = clock.tick(60) / 1000.0
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
 
-        screen.fill((0, 0, 0))
+        new_position = player_position.copy()
+
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_w]:
+            new_position.y -= 300 * delta_time
+        if keys[pygame.K_s]:
+            new_position.y += 300 * delta_time
+        if keys[pygame.K_a]:
+            new_position.x -= 300 * delta_time
+        if keys[pygame.K_d]:
+            new_position.x += 300 * delta_time
+
+        if not is_collision(new_position):
+            player_position = new_position
+
+        display.fill((0, 0, 0))
         draw_level(level)
+
+        pygame.draw.circle(display, "pink", player_position, 40)
         pygame.display.flip()
-
-    pygame.draw.circle(screen, "pink", player_pos, 40)
-
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_w]:
-        player_pos.y -= 300 * dt
-    if keys[pygame.K_s]:
-        player_pos.y += 300 * dt
-    if keys[pygame.K_a]:
-        player_pos.x -= 300 * dt
-    if keys[pygame.K_d]:
-        player_pos.x += 300 * dt
 
     pygame.quit()
 
