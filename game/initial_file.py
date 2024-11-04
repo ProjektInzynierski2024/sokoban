@@ -3,15 +3,18 @@ import pygame
 TITLE_BAR_SIZE_IN_PIXELS = 60
 TILES_PER_ROW = 9
 
+score = 0
+
 def initialize_pygame_display():
     pygame.init()
     info = pygame.display.Info()
     width, height = info.current_w, info.current_h - TITLE_BAR_SIZE_IN_PIXELS
     pygame.display.set_caption("Sokoban")
-    return pygame.display.set_mode((width, height), pygame.RESIZABLE),  width, height
+    font = pygame.font.Font(None, 36)
+    return pygame.display.set_mode((width, height), pygame.RESIZABLE),  width, height, font
 
 
-display, display_width, display_height = initialize_pygame_display()
+display, display_width, display_height, display_font = initialize_pygame_display()
 
 calculate_tile_size = min(
     display_width // TILES_PER_ROW,
@@ -25,7 +28,10 @@ tile_grid_height = TILES_PER_ROW * TILE_SIZE
 left_corner_x_coordinate = (display_width - tile_grid_width) // 2
 left_corner_y_coordinate = (display_height - tile_grid_height) // 2
 
-def draw_level(level):
+def draw_level():
+    score_text = display_font.render(f"Score: {score}", True, (255, 255, 255))
+    display.blit(score_text, (10, 10))
+
     for y, row in enumerate(level):
         for x, tile in enumerate(row):
             tile_x_coordinate = left_corner_x_coordinate + x * TILE_SIZE
@@ -43,13 +49,13 @@ def draw_level(level):
 
 level = [
     [1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 3, 0, 0, 0, 0, 0, 3, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 2, 0, 2, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 2, 0, 2, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 2, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 3, 0, 0, 0, 0, 0, 3, 1],
     [1, 1, 1, 1, 1, 1, 1, 1, 1]
 ]
 
@@ -77,7 +83,7 @@ def attempt_to_move_box(new_position, direction):
     tile_behind_box_x = grid_x + direction[0]
     tile_behind_box_y = grid_y + direction[1]
 
-    if level[tile_behind_box_y][tile_behind_box_x] == 0:
+    if level[tile_behind_box_y][tile_behind_box_x] != 1 and level[tile_behind_box_y][tile_behind_box_x] != 2:
         level[grid_y][grid_x] = 0
         level[tile_behind_box_y][tile_behind_box_x] = 2
         successfully_moved_box = True
@@ -87,6 +93,16 @@ def attempt_to_move_box(new_position, direction):
 def move_player_and_box(direction, new_position, player_position):
     if attempt_to_move_box(new_position, direction):
         move_player(new_position, player_position)
+        update_score()
+
+def check_boxes_on_targets():
+    return not any(3 in row for row in level)
+
+def update_score():
+    global score
+    if check_boxes_on_targets():
+        score += 100
+
 
 def main():
     running = True
@@ -119,7 +135,7 @@ def main():
             check_next_field(new_position, player_position, direction)
 
         display.fill((0, 0, 0))
-        draw_level(level)
+        draw_level()
 
         pygame.draw.circle(display, "pink", player_position, 40)
         pygame.display.flip()
