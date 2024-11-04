@@ -62,8 +62,7 @@ def check_next_field(new_position, player_position, direction):
     if field_type == 0:
         move_player(new_position, player_position)
     elif field_type == 2:
-        if attempt_to_move_box(new_position, direction):
-            move_player(new_position, player_position)
+        move_player_and_box(direction, new_position, player_position)
     else:
         pass
 
@@ -85,6 +84,9 @@ def attempt_to_move_box(new_position, direction):
 
     return successfully_moved_box
 
+def move_player_and_box(direction, new_position, player_position):
+    if attempt_to_move_box(new_position, direction):
+        move_player(new_position, player_position)
 
 def main():
     running = True
