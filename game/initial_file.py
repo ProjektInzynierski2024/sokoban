@@ -43,21 +43,47 @@ def draw_level(level):
 
 level = [
     [1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 2, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 3, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 2, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 1, 1, 1, 1, 1, 1, 1, 1]
 ]
 
-def is_collision(new_position):
+def check_next_field(new_position, player_position, direction):
     grid_x = int((new_position.x - left_corner_x_coordinate) / TILE_SIZE)
     grid_y = int((new_position.y - left_corner_y_coordinate) / TILE_SIZE)
 
-    return level[grid_y][grid_x] == 1
+    field_type = level[grid_y][grid_x]
+
+    if field_type == 0:
+        move_player(new_position, player_position)
+    elif field_type == 2:
+        if attempt_to_move_box(new_position, direction):
+            move_player(new_position, player_position)
+    else:
+        pass
+
+def move_player(new_position, player_position):
+    player_position.update(new_position)
+
+def attempt_to_move_box(new_position, direction):
+    successfully_moved_box = False
+    grid_x = int((new_position.x - left_corner_x_coordinate) / TILE_SIZE)
+    grid_y = int((new_position.y - left_corner_y_coordinate) / TILE_SIZE)
+
+    tile_behind_box_x = grid_x + direction[0]
+    tile_behind_box_y = grid_y + direction[1]
+
+    if level[tile_behind_box_y][tile_behind_box_x] == 0:
+        level[grid_y][grid_x] = 0
+        level[tile_behind_box_y][tile_behind_box_x] = 2
+        successfully_moved_box = True
+
+    return successfully_moved_box
 
 
 def main():
@@ -66,32 +92,36 @@ def main():
     player_position = pygame.Vector2(display.get_width() / 2, display.get_height() / 2)
 
     while running:
-        delta_time = clock.tick(60) / 1000.0
-
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
 
         new_position = player_position.copy()
 
+        direction = None
         keys = pygame.key.get_pressed()
         if keys[pygame.K_w]:
-            new_position.y -= 300 * delta_time
+            new_position.y -= 1 * TILE_SIZE
+            direction = (0,-1)
         if keys[pygame.K_s]:
-            new_position.y += 300 * delta_time
+            new_position.y += 1 * TILE_SIZE
+            direction = (0, 1)
         if keys[pygame.K_a]:
-            new_position.x -= 300 * delta_time
+            new_position.x -= 1 * TILE_SIZE
+            direction = (-1, 0)
         if keys[pygame.K_d]:
-            new_position.x += 300 * delta_time
+            new_position.x += 1 * TILE_SIZE
+            direction = (1, 0)
 
-        if not is_collision(new_position):
-            player_position = new_position
+        if direction:
+            check_next_field(new_position, player_position, direction)
 
         display.fill((0, 0, 0))
         draw_level(level)
 
         pygame.draw.circle(display, "pink", player_position, 40)
         pygame.display.flip()
+        clock.tick(8)
 
     pygame.quit()
 
