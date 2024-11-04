@@ -46,7 +46,10 @@ def draw_level():
             else:
                 pygame.draw.rect(display, "gray", (tile_x_coordinate, tile_y_coordinate, TILE_SIZE, TILE_SIZE))
 
-
+#0 - movement area
+#1 - wall
+#2 - box
+#3 - place to put box (target)
 level = [
     [1, 1, 1, 1, 1, 1, 1, 1, 1],
     [1, 3, 0, 0, 0, 0, 0, 3, 1],
