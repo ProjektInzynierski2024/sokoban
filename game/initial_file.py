@@ -5,6 +5,8 @@ TILES_PER_ROW = 9
 
 score = 0
 
+bricks = pygame.image.load("bricks.png")
+
 def initialize_pygame_display():
     pygame.init()
     info = pygame.display.Info()
@@ -38,7 +40,7 @@ def draw_level():
             tile_y_coordinate = left_corner_y_coordinate + y * TILE_SIZE
 
             if tile == 1:
-                pygame.draw.rect(display, "green", (tile_x_coordinate, tile_y_coordinate, TILE_SIZE, TILE_SIZE))
+                display.blit(bricks, (tile_x_coordinate, tile_y_coordinate))
             elif tile == 2:
                 pygame.draw.rect(display, "red", (tile_x_coordinate, tile_y_coordinate, TILE_SIZE, TILE_SIZE))
             elif tile == 3:
@@ -121,16 +123,16 @@ def main():
 
         direction = None
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_w]:
+        if keys[pygame.K_UP]:
             new_position.y -= 1 * TILE_SIZE
             direction = (0,-1)
-        if keys[pygame.K_s]:
+        if keys[pygame.K_DOWN]:
             new_position.y += 1 * TILE_SIZE
             direction = (0, 1)
-        if keys[pygame.K_a]:
+        if keys[pygame.K_LEFT]:
             new_position.x -= 1 * TILE_SIZE
             direction = (-1, 0)
-        if keys[pygame.K_d]:
+        if keys[pygame.K_RIGHT]:
             new_position.x += 1 * TILE_SIZE
             direction = (1, 0)
 
