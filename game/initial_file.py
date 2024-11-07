@@ -5,8 +5,6 @@ TILES_PER_ROW = 9
 
 score = 0
 
-bricks = pygame.image.load("bricks.png")
-
 def initialize_pygame_display():
     pygame.init()
     info = pygame.display.Info()
@@ -14,7 +12,6 @@ def initialize_pygame_display():
     pygame.display.set_caption("Sokoban")
     font = pygame.font.Font(None, 36)
     return pygame.display.set_mode((width, height), pygame.RESIZABLE),  width, height, font
-
 
 display, display_width, display_height, display_font = initialize_pygame_display()
 
@@ -27,12 +24,26 @@ TILE_SIZE = calculate_tile_size
 tile_grid_width = TILES_PER_ROW * TILE_SIZE
 tile_grid_height = TILES_PER_ROW * TILE_SIZE
 
+bricks = pygame.image.load("images/bricks.png")
+grass = pygame.image.load("images/floor.png")
+bomb = pygame.image.load("images/bomb.png")
+soldier = pygame.image.load("images/soldier.png")
+chest = pygame.image.load("images/chest.png")
+
+grass = pygame.transform.scale(grass, (TILE_SIZE, TILE_SIZE))
+bricks = pygame.transform.scale(bricks, (TILE_SIZE, TILE_SIZE))
+bomb = pygame.transform.scale(bomb, (TILE_SIZE, TILE_SIZE))
+soldier = pygame.transform.scale(soldier, (TILE_SIZE, TILE_SIZE))
+chest = pygame.transform.scale(chest, (TILE_SIZE, TILE_SIZE))
+
 left_corner_x_coordinate = (display_width - tile_grid_width) // 2
 left_corner_y_coordinate = (display_height - tile_grid_height) // 2
 
 def draw_level():
     score_text = display_font.render(f"Score: {score}", True, (255, 255, 255))
     display.blit(score_text, (10, 10))
+    if score == 100:
+        display.blit(display_font.render("You win!", True, (255, 255, 255)), (10, 40))
 
     for y, row in enumerate(level):
         for x, tile in enumerate(row):
@@ -42,11 +53,11 @@ def draw_level():
             if tile == 1:
                 display.blit(bricks, (tile_x_coordinate, tile_y_coordinate))
             elif tile == 2:
-                pygame.draw.rect(display, "red", (tile_x_coordinate, tile_y_coordinate, TILE_SIZE, TILE_SIZE))
+                display.blit(chest, (tile_x_coordinate, tile_y_coordinate))
             elif tile == 3:
-                pygame.draw.rect(display, "blue", (tile_x_coordinate, tile_y_coordinate, TILE_SIZE, TILE_SIZE))
+                display.blit(bomb, (tile_x_coordinate, tile_y_coordinate))
             else:
-                pygame.draw.rect(display, "gray", (tile_x_coordinate, tile_y_coordinate, TILE_SIZE, TILE_SIZE))
+                display.blit(grass, (tile_x_coordinate, tile_y_coordinate))
 
 #0 - movement area
 #1 - wall
@@ -55,11 +66,11 @@ def draw_level():
 level = [
     [1, 1, 1, 1, 1, 1, 1, 1, 1],
     [1, 3, 0, 0, 0, 0, 0, 3, 1],
+    [1, 0, 1, 0, 0, 0, 1, 0, 1],
+    [1, 0, 1, 2, 0, 2, 1, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 2, 0, 2, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 2, 0, 2, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 1, 2, 0, 2, 1, 0, 1],
+    [1, 0, 1, 0, 0, 0, 1, 0, 1],
     [1, 3, 0, 0, 0, 0, 0, 3, 1],
     [1, 1, 1, 1, 1, 1, 1, 1, 1]
 ]
@@ -70,7 +81,7 @@ def check_next_field(new_position, player_position, direction):
 
     field_type = level[grid_y][grid_x]
 
-    if field_type == 0:
+    if field_type == 0 or field_type == 3:
         move_player(new_position, player_position)
     elif field_type == 2:
         move_player_and_box(direction, new_position, player_position)
@@ -112,7 +123,7 @@ def update_score():
 def main():
     running = True
     clock = pygame.time.Clock()
-    player_position = pygame.Vector2(display.get_width() / 2, display.get_height() / 2)
+    player_position = pygame.Vector2(display.get_width() / 2 - TILE_SIZE/2, display.get_height() / 2 - TILE_SIZE/2)
 
     while running:
         for event in pygame.event.get():
@@ -123,27 +134,35 @@ def main():
 
         direction = None
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_UP]:
-            new_position.y -= 1 * TILE_SIZE
-            direction = (0,-1)
-        if keys[pygame.K_DOWN]:
-            new_position.y += 1 * TILE_SIZE
-            direction = (0, 1)
-        if keys[pygame.K_LEFT]:
-            new_position.x -= 1 * TILE_SIZE
-            direction = (-1, 0)
-        if keys[pygame.K_RIGHT]:
-            new_position.x += 1 * TILE_SIZE
-            direction = (1, 0)
+        pressed_keys = [keys[pygame.K_UP], keys[pygame.K_DOWN], keys[pygame.K_LEFT], keys[pygame.K_RIGHT]]
+        num_pressed_keys = sum(pressed_keys)
+
+        if num_pressed_keys == 1:
+            if keys[pygame.K_UP]:
+                new_position.y -= 1 * TILE_SIZE
+                direction = (0,-1)
+            if keys[pygame.K_DOWN]:
+                new_position.y += 1 * TILE_SIZE
+                direction = (0, 1)
+            if keys[pygame.K_LEFT]:
+                new_position.x -= 1 * TILE_SIZE
+                direction = (-1, 0)
+            if keys[pygame.K_RIGHT]:
+                new_position.x += 1 * TILE_SIZE
+                direction = (1, 0)
 
         if direction:
             check_next_field(new_position, player_position, direction)
-
         display.fill((0, 0, 0))
         draw_level()
 
-        pygame.draw.circle(display, "pink", player_position, 40)
+        display.blit(soldier, player_position)
         pygame.display.flip()
+
+        if score == 100:
+            pygame.time.wait(2000)
+            running = False
+
         clock.tick(8)
 
     pygame.quit()
