@@ -17,8 +17,6 @@ level = [
         [1, 1, 1, 1, 1, 1, 1, 1, 1]
     ]
 
-
-
 class GameAI:
     def __init__(self, level_board):
         self.board = level_board
@@ -37,8 +35,8 @@ class GameAI:
     def get_targets_positions(self):
         targets = []
         for y, row in enumerate(self.board):
-            for x, cell in enumerate(row):
-                if cell == 3:
+            for x, tile in enumerate(row):
+                if tile == 3:
                     targets.append((y, x))
         return targets
 
