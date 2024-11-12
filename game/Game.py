@@ -1,7 +1,7 @@
 import pygame
 
-from game.Common import RGB_COLOR_BLACK
-from game.Displayer import Displayer
+from common.Common import RGB_COLOR_BLACK
+from common.Displayer import Displayer
 from game.Player import Player
 
 level = [
