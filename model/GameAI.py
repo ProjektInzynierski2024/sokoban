@@ -83,6 +83,11 @@ class GameAI:
 
         return game.check_boxes_on_targets()
 
+    def reset(self, level_board):
+        self.board = level_board
+        self.player_position = self.get_player_position()
+        self.targets = self.get_targets_positions()
+
 if __name__ == "__main__":
     clock = pygame.time.Clock()
     game = GameAI(level)
