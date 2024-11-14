@@ -1,70 +1,36 @@
 import pygame
-
-from common.Common import TILES_PER_ROW, TITLE_BAR_SIZE_IN_PIXELS
+from common.Common import TILE_SIZE
 
 class Displayer:
-    def __init__(self):
-        pygame.init()
-        info = pygame.display.Info()
+    def __init__(self, game):
+        self.game = game
+        self.screen = pygame.display.set_mode((game.width * TILE_SIZE, game.height * TILE_SIZE))
         pygame.display.set_caption("Sokoban")
 
-        self.display_font = pygame.font.Font(None, 36)
-        self.display_width, self.display_height = info.current_w, info.current_h - TITLE_BAR_SIZE_IN_PIXELS
-        self.display = pygame.display.set_mode((self.display_width,  self.display_height), pygame.RESIZABLE)
+    def update_ui(self):
 
-        self.tile_size = min(self.display_width // TILES_PER_ROW, (self.display_height - 100) // TILES_PER_ROW)
+        bomb, bricks, chest, grass, soldier = self.load_images()
 
-        self.tile_grid_width = self.tile_size * TILES_PER_ROW
-        self.tile_grid_height = self.tile_size * TILES_PER_ROW
+        grass = pygame.transform.scale(grass, (TILE_SIZE, TILE_SIZE))
+        bricks = pygame.transform.scale(bricks, (TILE_SIZE, TILE_SIZE))
+        bomb = pygame.transform.scale(bomb, (TILE_SIZE, TILE_SIZE))
+        chest = pygame.transform.scale(chest, (TILE_SIZE, TILE_SIZE))
+        soldier = pygame.transform.scale(soldier, (TILE_SIZE, TILE_SIZE))
 
-        self.left_corner_x_coordinate = (self.display_width - self.tile_grid_width) // 2
-        self.left_corner_y_coordinate = (self.display_height - self.tile_grid_height) // 2
-
-        self.soldier = pygame.image.load("../common/images/soldier.png")
-        self.soldier = pygame.transform.scale(self.soldier, (self.tile_size, self.tile_size))
-
-    def get_left_corner_coordinates(self):
-        return self.left_corner_x_coordinate, self.left_corner_y_coordinate
-
-    def get_tile_size(self):
-        return self.tile_size
-
-    def display_soldier_on_position(self, soldier_position):
-        self.display.blit(self.soldier, soldier_position)
-
-    def display_soldier_in_the_center(self):
-        return pygame.Vector2(self.display.get_width() / 2 - self.tile_size / 2, self.display.get_height() / 2 - self.tile_size / 2)
-
-    def display_score(self, score):
-        score_text = self.display_font.render(f"Score: {score}", True, (255, 255, 255))
-        self.display.blit(score_text, (10, 10))
-
-        if score == 100:
-            self.display.blit(self.display_font.render("You win!", True, (255, 255, 255)), (10, 40))
-
-    def display_level(self, level):
-        bomb, bricks, chest, grass = self.load_images()
-
-        grass = pygame.transform.scale(grass, (self.tile_size, self.tile_size))
-        bricks = pygame.transform.scale(bricks, (self.tile_size, self.tile_size))
-        bomb = pygame.transform.scale(bomb, (self.tile_size, self.tile_size))
-        chest = pygame.transform.scale(chest, (self.tile_size, self.tile_size))
-
-        for y, row in enumerate(level):
+        for y, row in enumerate(self.game.board):
             for x, tile in enumerate(row):
-                tile_x_coordinate = self.left_corner_x_coordinate + x * self.tile_size
-                tile_y_coordinate = self.left_corner_y_coordinate + y * self.tile_size
-
+                tile_x, tile_y = x * TILE_SIZE, y * TILE_SIZE
                 if tile == 1:
-                    self.display.blit(bricks, (tile_x_coordinate, tile_y_coordinate))
+                    self.screen.blit(bricks, (tile_x, tile_y))
                 elif tile == 2:
-                    self.display.blit(chest, (tile_x_coordinate, tile_y_coordinate))
+                    self.screen.blit(chest, (tile_x, tile_y))
                 elif tile == 3:
-                    self.display.blit(bomb, (tile_x_coordinate, tile_y_coordinate))
+                    self.screen.blit(bomb, (tile_x, tile_y))
+                elif tile == 4:
+                    self.screen.blit(soldier, (tile_x, tile_y))
                 else:
-                    self.display.blit(grass, (tile_x_coordinate, tile_y_coordinate))
+                    self.screen.blit(grass, (tile_x, tile_y))
 
-    def flip(self):
         pygame.display.flip()
 
     def load_images(self):
@@ -72,8 +38,5 @@ class Displayer:
         grass = pygame.image.load("../common/images/floor.png")
         bomb = pygame.image.load("../common/images/bomb.png")
         chest = pygame.image.load("../common/images/chest.png")
-        return bomb, bricks, chest, grass
-
-    def fill_display_with_color(self, color):
-        self.display.fill(color)
-
+        soldier = pygame.image.load("../common/images/soldier.png")
+        return bomb, bricks, chest, grass, soldier

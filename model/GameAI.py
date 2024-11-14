@@ -3,7 +3,7 @@ import sys
 import pygame
 
 from common.Common import SPEED
-from model.DisplayerAI import DisplayerAI
+from common.Displayer import Displayer
 
 level = [
         [1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -69,6 +69,7 @@ class GameAI:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
+                sys.exit()
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
                     game.move((-1, 0))
@@ -91,7 +92,7 @@ class GameAI:
 if __name__ == "__main__":
     clock = pygame.time.Clock()
     game = GameAI(level)
-    displayer = DisplayerAI(game)
+    displayer = Displayer(game)
 
     while True:
         game_over = game.play_step()
