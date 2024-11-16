@@ -2,20 +2,10 @@ import sys
 
 import pygame
 
-from common.Common import SPEED
+from common.Common import SPEED, LEVEL
 from common.Displayer import Displayer
+from enum import Enum
 
-level = [
-        [1, 1, 1, 1, 1, 1, 1, 1, 1],
-        [1, 0, 3, 0, 0, 0, 3, 0, 1],
-        [1, 0, 1, 0, 0, 0, 1, 0, 1],
-        [1, 0, 1, 2, 0, 2, 1, 0, 1],
-        [1, 0, 0, 0, 4, 0, 0, 0, 1],
-        [1, 0, 1, 2, 0, 2, 1, 0, 1],
-        [1, 0, 1, 0, 0, 0, 1, 0, 1],
-        [1, 0, 3, 0, 0, 0, 3, 0, 1],
-        [1, 1, 1, 1, 1, 1, 1, 1, 1]
-    ]
 
 class GameAI:
     def __init__(self, level_board):
@@ -24,13 +14,14 @@ class GameAI:
         self.width = len(self.board[0])
         self.height = len(self.board)
         self.targets = self.get_targets_positions()
+        self.score = 0
 
 
     def get_player_position(self):
         for y, row in enumerate(self.board):
             for x, tile in enumerate(row):
                 if tile == 4:
-                    return (y, x)
+                    return y, x
 
     def get_targets_positions(self):
         targets = []
@@ -62,45 +53,57 @@ class GameAI:
     def is_valid(self, y, x):
         return 0 <= y < len(self.board) and 0 <= x < len(self.board[0])
 
-    def check_boxes_on_targets(self):
+    def check_all_boxes_on_targets(self):
         return all(tile == 2 for _, tile in zip(self.targets, [self.board[x][y] for x, y in self.targets]))
 
-    def play_step(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP:
-                    game.move((-1, 0))
-                elif event.key == pygame.K_DOWN:
-                    game.move((1, 0))
-                elif event.key == pygame.K_LEFT:
-                    game.move((0, -1))
-                elif event.key == pygame.K_RIGHT:
-                    game.move((0, 1))
+    def check_any_box_on_target(self):
+        return any(self.board[x][y] == 2 for x, y in self.targets)
 
-        displayer.update_ui()
+    def play_step(self, move):
+        if move == Move.UP.value:
+            self.move(Direction.UP.value)
+        elif move == Move.DOWN.value:
+            self.move(Direction.DOWN.value)
+        elif move == Move.LEFT.value:
+            self.move(Direction.LEFT.value)
+        elif move == Move.RIGHT.value:
+            self.move(Direction.RIGHT.value)
 
-        return game.check_boxes_on_targets()
+        reward = self.check_any_box_on_target()
+        done = self.check_all_boxes_on_targets()
+
+        if reward:
+            self.score += 10
+
+        return reward, done, self.score
 
     def reset(self, level_board):
         self.board = level_board
         self.player_position = self.get_player_position()
         self.targets = self.get_targets_positions()
 
-if __name__ == "__main__":
-    clock = pygame.time.Clock()
-    game = GameAI(level)
-    displayer = Displayer(game)
+# if __name__ == "__main__":
+#     clock = pygame.time.Clock()
+#     game = GameAI(LEVEL)
+#     displayer = Displayer(game)
+#
+#     while True:
+#         game_over = game.play_step()
+#         if game_over:
+#             break
+#         clock.tick(SPEED)
+#
+#     pygame.quit()
+#     sys.exit()
 
-    while True:
-        game_over = game.play_step()
-        if game_over:
-            break
-        clock.tick(SPEED)
+class Move(Enum):
+    LEFT = [1,0,0,0]
+    UP = [0,1,0,0]
+    DOWN = [0,0,1,0]
+    RIGHT = [0,0,0,1]
 
-    pygame.quit()
-    sys.exit()
-
-
+class Direction(Enum):
+    LEFT = (0, -1)
+    UP = (-1, 0)
+    DOWN = (1, 0)
+    RIGHT = (0, 1)
