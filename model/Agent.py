@@ -1,126 +1,92 @@
 import torch
-import random
-import numpy as np
-from collections import deque
 from Model import QNeuralNetwork, QTrainer
 from common.Common import LEVEL
 from common.Displayer import Displayer
-import time
-
+from model.GameAI import Move
 from model.GameAI import GameAI
 
 MAX_MEMORY = 100_00
 SAMPLE_SIZE = 1000
 LEARNING_RATE = 0.001
 
+import random
+import numpy as np
+from collections import deque
+
+
 class Agent:
-    def __init__(self):
-        self.number_games = 0
-        self.epsilon = 0
-        self.gamma = 0.9
-        self.memory = deque(maxlen=MAX_MEMORY)
-        self.model = QNeuralNetwork(11, 256, 4)
-        self.trainer = QTrainer(self.model, LEARNING_RATE, gamma=self.gamma)
-
-    def get_state(self, game):
-        state = []
-        # state = [
-        #     2, 2,  # Player position
-        #     1, 2,  # Box positions
-        #     2, 3, 0,  # Target position with status (0 = unoccupied)
-        #     2, 0, 0, 3  # Immediate surroundings (up, down, left, right)
-        # ]
-
-        player_y, player_x = game.player_position
-        state.append(player_y)
-        state.append(player_x)
-
-        for y, row in enumerate(game.board):
-            for x, tile in enumerate(row):
-                if tile == 2:
-                    state.append(y)
-                    state.append(x)
-
-        for target_y, target_x in game.targets:
-            is_occupied = game.board[target_y][target_x] == 2
-            state.append(target_y)
-            state.append(target_x)
-            state.append(1 if is_occupied else 0)
-
-        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-        for y, x in directions:
-            new_y, new_x = player_y + y, player_x + x
-            if game.is_valid(new_y, new_x):
-                state.append(game.board[new_y][new_x])
-            else:
-                state.append(1)
-
-        return state
-
+    def __init__(self, input_size, hidden_size, output_size, gamma=0.9, learning_rate=0.001, epsilon_start=1.0,
+                 epsilon_min=0.01, epsilon_decay=0.995):
+        self.model = QNeuralNetwork(input_size, hidden_size, output_size)
+        self.trainer = QTrainer(self.model, learning_rate, gamma)
+        self.epsilon = epsilon_start
+        self.epsilon_min = epsilon_min
+        self.epsilon_decay = epsilon_decay
+        self.memory = deque(maxlen=100_000)
+        self.batch_size = 64
+        self.n_games = 0
 
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
 
-    def train_long_memory(self):
-        if len(self.memory) > SAMPLE_SIZE:
-            sample = random.sample(self.memory, SAMPLE_SIZE)
-        else:
-            sample = self.memory
+    def get_state(self, game):
+        state = np.array(game.board).flatten()
+        return state
 
-        states, actions, rewards, next_states, dones = zip(*sample)
+    def select_action(self, state):
+        if random.random() < self.epsilon:
+            return random.choice([0, 1, 2, 3])
+        state_tensor = torch.tensor(state, dtype=torch.float)
+        with torch.no_grad():
+            prediction = self.model(state_tensor)
+        return torch.argmax(prediction).item()
+
+    def train_long_memory(self):
+        if len(self.memory) < self.batch_size:
+            mini_sample = self.memory
+        else:
+            mini_sample = random.sample(self.memory, self.batch_size)
+
+        states, actions, rewards, next_states, dones = zip(*mini_sample)
         self.trainer.train_step(states, actions, rewards, next_states, dones)
 
     def train_short_memory(self, state, action, reward, next_state, done):
         self.trainer.train_step(state, action, reward, next_state, done)
 
-    def get_action(self, state):
-        # random moves: tradeoff exploration / exploitation
-        self.epsilon = 80 - self.number_games
-        final_move = [0,0,0,0]
+    def update_epsilon(self):
+        if self.epsilon > self.epsilon_min:
+            self.epsilon *= self.epsilon_decay
 
-        # random moves
-        if random.randint(0, 200) < self.epsilon:
-            random_index = random.randint(0, 3)
-            final_move[random_index] = 1
+    def train(self, game):
+        while True:
 
-        # predictions
-        else:
-            state_tensor = torch.tensor(state, dtype=torch.float)
-            # will call model forward function
-            prediction = self.model(state_tensor)
-            predicted_move_index = torch.argmax(prediction).item()
-            final_move[predicted_move_index] = 1
+            state_old = self.get_state(game)
 
-        return final_move
+            action = self.select_action(state_old)
 
-def train():
-    record = 0
-    agent = Agent()
-    game = GameAI(LEVEL)
-    displayer = Displayer(game)
+            move = [Move.LEFT, Move.UP, Move.DOWN, Move.RIGHT][action]
+            reward, done, score = game.play_step(move)
 
-    max_game_time = 10
-    game_start_time = time.time()
-    while True:
-        state_old = agent.get_state(game)
-        final_move = agent.get_action(state_old)
-        reward, done, score = game.play_step(final_move)
-        displayer.update_ui()
-        state_new = agent.get_state(game)
-        agent.train_short_memory(state_old, final_move, reward, state_new, done)
-        agent.remember(state_old, final_move, reward, state_new, done)
+            displayer.update_ui()
 
-        elapsed_time = time.time() - game_start_time
-        if done or elapsed_time > max_game_time:
-            game.reset(LEVEL)
-            agent.number_games += 1
-            agent.train_long_memory()
+            state_new = self.get_state(game)
 
-            if score > record:
-                record = score
-                agent.model.save()
+            self.remember(state_old, action, reward, state_new, done)
+            self.train_short_memory(state_old, action, reward, state_new, done)
 
-            print('Game', agent.number_games, 'Score', score, 'Record:', record)
+            if done:
+                self.train_long_memory()
 
-if __name__ == '__main__':
-    train()
+                print(f'Gra: {self.n_games + 1}, Liczba ruchów: {score}, Nagroda: {reward}')
+
+                game.reset()
+                self.n_games += 1
+                self.update_epsilon()
+                break
+
+game = GameAI(LEVEL)
+displayer = Displayer(game)
+agent = Agent(input_size=np.array(game.board).flatten().size, hidden_size=128, output_size=4)  # 81 = 9x9 rozmiar planszy
+
+while True:
+    agent.train(game)
