@@ -19,7 +19,7 @@ class GameAI:
         self.visited_positions = set()
         self.total_moves = 0
         self.total_reward = 0
-        self.max_moves = 100
+        self.max_moves = 20
 
     def get_player_position(self):
         for y, row in enumerate(self.board):
@@ -62,13 +62,46 @@ class GameAI:
                 self.board[new_y][new_x] = 4
                 self.player_position = (new_y, new_x)
             elif self.board[new_y][new_x] == 2 and self.is_valid(next_y, next_x):
-
                 if self.board[next_y][next_x] in (0, 3):
                     self.board[y][x] = 0 if (y, x) not in self.targets else 3
                     self.board[new_y][new_x] = 4
                     self.board[next_y][next_x] = 2
                     self.player_position = (new_y, new_x)
+                    reward += 1
+        # else:
+        #     reward -= 1
+
+        # Kara za odwiedzenie tej samej pozycji
+        # if self.player_position in self.visited_positions:
+        #     reward -= 0.1
+        # else:
+        #     self.visited_positions.add(self.player_position)
+
         return reward
+
+    def calculate_total_distance(self):
+        total_distance = 0
+        for y, row in enumerate(self.board):
+            for x, tile in enumerate(row):
+                if tile == 2:  # Skrzynia
+                    min_distance = float('inf')
+                    for target_y, target_x in self.targets:
+                        distance = abs(y - target_y) + abs(x - target_x)
+                        min_distance = min(min_distance, distance)
+                    total_distance += min_distance
+        return total_distance
+
+    def adjust_reward_based_on_distance(self, previous_distance):
+        # Zabezpieczenie przed błędami związanymi z niemożliwością obliczenia odległości
+        try:
+            current_distance = self.calculate_total_distance()
+            if current_distance < previous_distance:
+                return 3
+            elif current_distance > previous_distance:
+                return -1.5
+            return 0
+        except Exception as e:
+            return 0
 
     def is_valid(self, y, x):
         return 0 <= y < len(self.board) and 0 <= x < len(self.board[0])
@@ -90,24 +123,28 @@ class GameAI:
             Move.LEFT: Direction.LEFT.value,
             Move.RIGHT: Direction.RIGHT.value
         }
-
+        previous_distance = self.calculate_total_distance()
         reward = self.move(direction_map[move])
+
+        reward += self.adjust_reward_based_on_distance(previous_distance)
+
         self.total_reward += reward
+
         self.total_moves += 1
 
         if self.check_box_stuck_in_corner():
             self.total_reward -= 10
             return self.total_reward, True, self.total_moves
 
-        done = self.check_all_boxes_on_targets()
+        if self.total_moves >= self.max_moves:
+            self.total_reward -= 10
+            return self.total_reward, True, self.total_moves
 
+        done = self.check_all_boxes_on_targets()
         if done:
             self.total_reward += 10
             return self.total_reward, done, self.total_moves
 
-        if self.total_moves >= self.max_moves:
-            self.total_reward -= 10
-            return self.total_reward, True, self.total_moves
 
         return self.total_reward, done, self.total_moves
 

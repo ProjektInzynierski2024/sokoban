@@ -22,8 +22,8 @@ class Agent:
         self.epsilon = epsilon_start
         self.epsilon_min = epsilon_min
         self.epsilon_decay = epsilon_decay
-        self.memory = deque(maxlen=100_000)
-        self.batch_size = 64
+        self.memory = deque(maxlen=100_000_000)
+        self.batch_size = 128
         self.n_games = 0
 
     def remember(self, state, action, reward, next_state, done):
