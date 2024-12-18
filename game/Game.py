@@ -2,20 +2,8 @@ import sys
 
 import pygame
 
-from common.Common import SPEED
+from common.Common import SPEED, LEVEL
 from common.Displayer import Displayer
-
-level = [
-        [1, 1, 1, 1, 1, 1, 1, 1, 1],
-        [1, 0, 3, 0, 0, 0, 3, 0, 1],
-        [1, 0, 1, 0, 0, 0, 1, 0, 1],
-        [1, 0, 1, 2, 0, 2, 1, 0, 1],
-        [1, 0, 0, 0, 4, 0, 0, 0, 1],
-        [1, 0, 1, 2, 0, 2, 1, 0, 1],
-        [1, 0, 1, 0, 0, 0, 1, 0, 1],
-        [1, 0, 3, 0, 0, 0, 3, 0, 1],
-        [1, 1, 1, 1, 1, 1, 1, 1, 1]
-    ]
 
 class Game:
     def __init__(self, level_board):
@@ -30,7 +18,7 @@ class Game:
         for y, row in enumerate(self.board):
             for x, tile in enumerate(row):
                 if tile == 4:
-                    return (y, x)
+                    return y, x
 
     def get_targets_positions(self):
         targets = []
@@ -86,7 +74,7 @@ class Game:
 
 if __name__ == "__main__":
     clock = pygame.time.Clock()
-    game = Game(level)
+    game = Game(LEVEL)
     displayer = Displayer(game)
 
     while True:
