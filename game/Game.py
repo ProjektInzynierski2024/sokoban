@@ -2,9 +2,10 @@ import sys
 
 import pygame
 
-from common.Common import SPEED
+from common.Common import SPEED, LEVEL
 from common.Displayer import Displayer
 from generator.Generator import generate_level
+
 
 # level = [
 #         [1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -33,7 +34,7 @@ class Game:
         for y, row in enumerate(self.board):
             for x, tile in enumerate(row):
                 if tile == 4:
-                    return (y, x)
+                    return y, x
 
     def get_targets_positions(self):
         targets = []
@@ -89,7 +90,7 @@ class Game:
 
 if __name__ == "__main__":
     clock = pygame.time.Clock()
-    game = Game(level)
+    game = Game(LEVEL)
     displayer = Displayer(game)
 
     while True:
