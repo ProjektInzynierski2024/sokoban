@@ -4,18 +4,21 @@ import pygame
 
 from common.Common import SPEED
 from common.Displayer import Displayer
+from generator.Generator import generate_level
 
-level = [
-        [1, 1, 1, 1, 1, 1, 1, 1, 1],
-        [1, 0, 3, 0, 0, 0, 3, 0, 1],
-        [1, 0, 1, 0, 0, 0, 1, 0, 1],
-        [1, 0, 1, 2, 0, 2, 1, 0, 1],
-        [1, 0, 0, 0, 4, 0, 0, 0, 1],
-        [1, 0, 1, 2, 0, 2, 1, 0, 1],
-        [1, 0, 1, 0, 0, 0, 1, 0, 1],
-        [1, 0, 3, 0, 0, 0, 3, 0, 1],
-        [1, 1, 1, 1, 1, 1, 1, 1, 1]
-    ]
+# level = [
+#         [1, 1, 1, 1, 1, 1, 1, 1, 1],
+#         [1, 0, 3, 0, 0, 0, 3, 0, 1],
+#         [1, 0, 1, 0, 0, 0, 1, 0, 1],
+#         [1, 0, 1, 2, 0, 2, 1, 0, 1],
+#         [1, 0, 0, 0, 4, 0, 0, 0, 1],
+#         [1, 0, 1, 2, 0, 2, 1, 0, 1],
+#         [1, 0, 1, 0, 0, 0, 1, 0, 1],
+#         [1, 0, 3, 0, 0, 0, 3, 0, 1],
+#         [1, 1, 1, 1, 1, 1, 1, 1, 1]
+#     ]
+
+level = generate_level(size=6, num_boxes=3, complexity=2)
 
 class Game:
     def __init__(self, level_board):
