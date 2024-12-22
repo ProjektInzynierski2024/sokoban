@@ -4,22 +4,10 @@ import pygame
 
 from common.Common import SPEED, LEVEL
 from common.Displayer import Displayer
-from generator.Generator import generate_level
+from generator.Generator import Generator
 
-
-# level = [
-#         [1, 1, 1, 1, 1, 1, 1, 1, 1],
-#         [1, 0, 3, 0, 0, 0, 3, 0, 1],
-#         [1, 0, 1, 0, 0, 0, 1, 0, 1],
-#         [1, 0, 1, 2, 0, 2, 1, 0, 1],
-#         [1, 0, 0, 0, 4, 0, 0, 0, 1],
-#         [1, 0, 1, 2, 0, 2, 1, 0, 1],
-#         [1, 0, 1, 0, 0, 0, 1, 0, 1],
-#         [1, 0, 3, 0, 0, 0, 3, 0, 1],
-#         [1, 1, 1, 1, 1, 1, 1, 1, 1]
-#     ]
-
-level = generate_level(size=6, num_boxes=3, complexity=2)
+generator = Generator(size=9, number_of_boxes=4)
+level = generator.get_board()
 
 class Game:
     def __init__(self, level_board):
@@ -58,7 +46,7 @@ class Game:
                 self.player_position = (new_y, new_x)
             elif self.board[new_y][new_x] == 2 and self.is_valid(next_y, next_x):
                 if self.board[next_y][next_x] in (0, 3):
-                    self.board[y][x] = 0 if (y, x) not in self.targets else 2
+                    self.board[y][x] = 0 if (y, x) not in self.targets else 3
                     self.board[new_y][new_x] = 4
                     self.board[next_y][next_x] = 2
                     self.player_position = (new_y, new_x)
@@ -90,7 +78,7 @@ class Game:
 
 if __name__ == "__main__":
     clock = pygame.time.Clock()
-    game = Game(LEVEL)
+    game = Game(level)
     displayer = Displayer(game)
 
     while True:
