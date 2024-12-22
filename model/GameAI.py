@@ -68,14 +68,6 @@ class GameAI:
                     self.board[next_y][next_x] = 2
                     self.player_position = (new_y, new_x)
                     reward += 1
-        # else:
-        #     reward -= 1
-
-        # Kara za odwiedzenie tej samej pozycji
-        # if self.player_position in self.visited_positions:
-        #     reward -= 0.1
-        # else:
-        #     self.visited_positions.add(self.player_position)
 
         return reward
 
