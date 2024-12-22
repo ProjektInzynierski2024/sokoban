@@ -31,14 +31,12 @@ class Menu:
         self.background = pygame.image.load(os.path.join(self.assets_path, "background.png"))
 
         self.options = [
-            "Zagraj w grę",
-            "Wytrenuj agenta",
-            "Uruchom generator poziomu"
+            "PLAY THE GAME",
+            "TRAIN THE AGENT"
         ]
         self.actions = [
             self.start_game,
             self.train_agent,
-            self.run_level_generator
         ]
         self.selected_option = 0
 
@@ -70,9 +68,6 @@ class Menu:
 
     def train_agent(self):
         subprocess.run([sys.executable, "model/Agent.py"])
-
-    def run_level_generator(self):
-        subprocess.run([sys.executable, "generator/initial_file.py"])
 
     def run(self):
         while True:
