@@ -1,6 +1,5 @@
 import random
 from collections import deque
-import heapq
 
 class Generator:
     def __init__(self, size, number_of_boxes):
@@ -131,11 +130,10 @@ class Generator:
 
     def can_push_box(self, start_pos, box_pos):
         visited = set()
-        priority_queue = []  # Priorytetowy BFS
-        heapq.heappush(priority_queue, (0, box_pos[0], box_pos[1]))
+        queue = deque([start_pos])
 
-        while priority_queue:
-            priority, box_y, box_x = heapq.heappop(priority_queue)
+        while queue:
+            box_y, box_x = queue.popleft()
 
             if (box_y, box_x) in self.targets:
                 return True
@@ -144,7 +142,7 @@ class Generator:
 
             for dy, dx in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
                 new_box_y, new_box_x = box_y + dy, box_x + dx
-                player_y, player_x = box_y - dy, box_x - dx
+                player_y, player_x = box_y, box_x
 
                 if not self.is_valid_box_move(new_box_y, new_box_x):
                     continue
@@ -152,9 +150,7 @@ class Generator:
                 if not self.can_player_reach(player_y, player_x, start_pos):
                     continue
 
-                if (new_box_y, new_box_x) not in visited:
-                    distance_to_target = min(abs(t[0] - new_box_y) + abs(t[1] - new_box_x) for t in self.targets)
-                    heapq.heappush(priority_queue, (distance_to_target, new_box_y, new_box_x))
+                queue.append((new_box_y, new_box_x))
 
         return False
 
@@ -172,8 +168,7 @@ class Generator:
 
             for dy, dx in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
                 ny, nx = y + dy, x + dx
-                if (0 <= ny < self.size and 0 <= nx < self.size and
-                        self.board[ny][nx] == 0 and (ny, nx) not in visited):
+                if self.size > ny >= 0 and (0 == self.board[ny][nx] or 3 == self.board[ny][nx]) and 0 <= nx < self.size and (ny, nx) not in visited:
                     queue.append((ny, nx))
 
         return False
