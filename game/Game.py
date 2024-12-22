@@ -42,7 +42,7 @@ class Game:
                 self.player_position = (new_y, new_x)
             elif self.board[new_y][new_x] == 2 and self.is_valid(next_y, next_x):
                 if self.board[next_y][next_x] in (0, 3):
-                    self.board[y][x] = 0 if (y, x) not in self.targets else 2
+                    self.board[y][x] = 0 if (y, x) not in self.targets else 3
                     self.board[new_y][new_x] = 4
                     self.board[next_y][next_x] = 2
                     self.player_position = (new_y, new_x)
