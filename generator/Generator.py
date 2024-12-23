@@ -15,8 +15,8 @@ class Generator:
             self.board = self.generate_board()
             self.put_walls_on_random_positions()
             self.corners = self.get_corners()
-            self.targets = self.put_on_random_positions(number_of_objects=number_of_boxes, object_type=3)
-            self.boxes = self.put_boxes_on_random_positions(number_of_objects=number_of_boxes, object_type=2)
+            self.targets = self.put_bombs_on_random_positions(number_of_objects=number_of_boxes)
+            self.boxes = self.put_on_random_positions(number_of_objects=number_of_boxes, object_type=2, exclude_corners=True)
             self.player = self.put_on_random_positions(number_of_objects=1, object_type=4)
 
             if self.is_solvable():
@@ -51,42 +51,25 @@ class Generator:
                     empty_positions.append((y, x))
         return empty_positions
 
-    def put_on_random_positions(self, number_of_objects, object_type):
+    def put_on_random_positions(self, number_of_objects, object_type, exclude_corners=False):
         empty_positions = self.get_empty_positions()
+        if exclude_corners:
+            empty_positions = [pos for pos in empty_positions if pos not in self.corners]
         random.shuffle(empty_positions)
         objects = set()
-        for i in range(number_of_objects):
+        for i in range(min(number_of_objects, len(empty_positions))):
             y, x = empty_positions[i]
             self.board[y][x] = object_type
             objects.add((y, x))
         return objects
 
-    def put_boxes_on_random_positions(self, number_of_objects, object_type):
+    def put_walls_on_random_positions(self, wall_density=0.2):
         empty_positions = self.get_empty_positions()
         random.shuffle(empty_positions)
-        objects = set()
-        i = 0
-        while len(objects) < number_of_objects and i < len(empty_positions):
-            y, x = empty_positions[i]
-            if (y, x) not in self.corners:
-                self.board[y][x] = object_type
-                objects.add((y, x))
-            i += 1
-        return objects
+        target_walls = int(len(empty_positions) * wall_density)
 
-    def put_walls_on_random_positions(self, wall_density=0.3):
-        total_cells = (self.size - 2) ** 2
-        target_walls = int(total_cells * wall_density)
-        walls_added = 0
-
-        while walls_added < target_walls:
-            y, x = random.randint(1, self.size - 2), random.randint(1, self.size - 2)
-            if self.board[y][x] == 0:
-                self.board[y][x] = 1
-                if self.is_board_connected():
-                    walls_added += 1
-                else:
-                    self.board[y][x] = 0
+        for y, x in empty_positions[:target_walls]:
+            self.board[y][x] = 1
 
     def is_board_connected(self):
         start = None
@@ -120,7 +103,11 @@ class Generator:
         return True
 
     def is_solvable(self):
-        return self.can_solve_for_all_boxes()
+        return (
+            self.can_solve_for_all_boxes() and
+            self.all_goals_reachable() and
+            self.no_initial_deadlocks()
+        )
 
     def can_solve_for_all_boxes(self):
         player = list(self.player)[0]
@@ -182,3 +169,65 @@ class Generator:
         if not (0 <= new_box_y < self.size - 2 and 0 <= new_box_x < self.size - 2):
             return False
         return self.board[new_box_y][new_box_x] == 0 or self.board[new_box_y][new_box_x] == 3
+
+    def all_goals_reachable(self):
+        for target in self.targets:
+            reachable = False
+            for box in self.boxes:
+                if self.can_push_box(box, target):
+                    reachable = True
+                    break
+            if not reachable:
+                return False
+        return True
+
+    def no_initial_deadlocks(self):
+        for box in self.boxes:
+            if box in self.corners and box not in self.targets:
+                return False  # Deadlocked in a corner
+            if not self.has_free_movement(box):
+                return False
+        return True
+
+    def has_free_movement(self, box):
+        y, x = box
+        free_sides = 0
+        for dy, dx in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+            ny, nx = y + dy, x + dx
+            if 0 <= ny < self.size and 0 <= nx < self.size and self.board[ny][nx] == 0:
+                free_sides += 1
+        return free_sides > 0
+
+    def put_bombs_on_random_positions(self, number_of_objects):
+        empty_positions = self.get_empty_positions()
+        random.shuffle(empty_positions)
+        bombs = set()
+        for y, x in empty_positions:
+            if len(bombs) >= number_of_objects:
+                break
+            if self.is_valid_bomb_position(y, x):
+                self.board[y][x] = 3
+                bombs.add((y, x))
+        return bombs
+
+    def is_valid_bomb_position(self, y, x):
+        horizontal_free = 0
+        vertical_free = 0
+
+        # Sprawdź horyzontalnie
+        for dy, dx in [(0, -1), (0, -2), (0, 1), (0, 2)]:
+            ny, nx = y + dy, x + dx
+            if 0 <= ny < self.size and 0 <= nx < self.size and (self.board[ny][nx] == 0 or self.board[ny][nx] == 3):
+                horizontal_free += 1
+
+        # Sprawdź wertykalnie
+        for dy, dx in [(-1, 0), (-2, 0), (1, 0), (2, 0)]:
+            ny, nx = y + dy, x + dx
+            if 0 <= ny < self.size and 0 <= nx < self.size and (self.board[ny][nx] == 0 or self.board[ny][nx] == 3):
+                vertical_free += 1
+
+        # Warunki
+        if horizontal_free >= 3 and vertical_free >= 3:
+            return True
+
+        return False
