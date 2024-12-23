@@ -16,7 +16,7 @@ class Generator:
             self.put_walls_on_random_positions()
             self.corners = self.get_corners()
             self.targets = self.put_bombs_on_random_positions(number_of_objects=number_of_boxes)
-            self.boxes = self.put_on_random_positions(number_of_objects=number_of_boxes, object_type=2, exclude_corners=True)
+            self.boxes = self.put_boxes_on_random_positions(number_of_objects=number_of_boxes, object_type=2, exclude_corners=True)
             self.player = self.put_on_random_positions(number_of_objects=1, object_type=4)
 
             if self.is_solvable():
@@ -51,6 +51,48 @@ class Generator:
                     empty_positions.append((y, x))
         return empty_positions
 
+    def put_boxes_on_random_positions(self, number_of_objects, object_type, exclude_corners=False):
+        empty_positions = self.get_empty_positions()
+        if exclude_corners:
+            empty_positions = [pos for pos in empty_positions if pos not in self.corners]
+        random.shuffle(empty_positions)
+        objects = set()
+        directions = {"up": (-1, 0), "down": (1, 0), "left": (0, -1), "right": (0, 1)}
+        for i in range(min(number_of_objects, len(empty_positions))):
+            y, x = empty_positions[i]
+            for direction, (dy, dx) in directions.items():
+                ny, nx = y + dy, x + dx
+                if 0 <= ny < len(self.board) and 0 <= nx < len(self.board[0]):
+                    if self.board[ny][nx] == 1:
+                        if self.check_line_for_empty_spaces(ny, nx, direction):
+                            continue
+                self.board[y][x] = object_type
+                objects.add((y, x))
+        return objects
+
+    def check_line_for_empty_spaces(self, y, x, direction):
+        if direction == "left" or direction == "right":
+            line = self.board[y]
+            start = max(0, x - 1) if direction == "left" else min(len(line), x + 2)
+            count = 0
+            for i in range(start, len(line)):
+                if line[i] == 0:
+                    count += 1
+                    if count == 2:
+                        return True
+                else:
+                    count = 0
+        elif direction == "up" or direction == "down":
+            count = 0
+            for i in range(max(0, y - 1), len(self.board)):
+                if self.board[i][x] == 0:
+                    count += 1
+                    if count == 2:
+                        return True
+                else:
+                    count = 0
+        return False
+
     def put_on_random_positions(self, number_of_objects, object_type, exclude_corners=False):
         empty_positions = self.get_empty_positions()
         if exclude_corners:
@@ -68,8 +110,16 @@ class Generator:
         random.shuffle(empty_positions)
         target_walls = int(len(empty_positions) * wall_density)
 
-        for y, x in empty_positions[:target_walls]:
-            self.board[y][x] = 1
+        walls_added = 0
+
+        while walls_added < target_walls:
+            y, x = random.randint(1, self.size - 2), random.randint(1, self.size - 2)
+            if self.board[y][x] == 0:
+                self.board[y][x] = 1
+                if self.is_board_connected():
+                    walls_added += 1
+                else:
+                    self.board[y][x] = 0
 
     def is_board_connected(self):
         start = None
