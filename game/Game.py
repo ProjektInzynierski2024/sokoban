@@ -4,6 +4,10 @@ import pygame
 
 from common.Common import SPEED, LEVEL
 from common.Displayer import Displayer
+from generator.Generator import Generator
+
+generator = Generator(size=9, number_of_boxes=4)
+level = generator.get_board()
 
 class Game:
     def __init__(self, level_board):
@@ -74,7 +78,7 @@ class Game:
 
 if __name__ == "__main__":
     clock = pygame.time.Clock()
-    game = Game(LEVEL)
+    game = Game(level)
     displayer = Displayer(game)
 
     while True:
