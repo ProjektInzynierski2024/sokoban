@@ -34,9 +34,9 @@ class Displayer:
         pygame.display.flip()
 
     def load_images(self):
-        bricks = pygame.image.load("../common/images/bricks.png")
-        grass = pygame.image.load("../common/images/floor.png")
-        bomb = pygame.image.load("../common/images/bomb.png")
-        chest = pygame.image.load("../common/images/chest.png")
-        soldier = pygame.image.load("../common/images/soldier.png")
+        bricks = pygame.image.load("common/images/bricks.png")
+        grass = pygame.image.load("common/images/floor.png")
+        bomb = pygame.image.load("common/images/bomb.png")
+        chest = pygame.image.load("common/images/chest.png")
+        soldier = pygame.image.load("common/images/soldier.png")
         return bomb, bricks, chest, grass, soldier
