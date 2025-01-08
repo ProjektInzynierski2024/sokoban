@@ -1,7 +1,9 @@
+import pygame
 import torch
 from Model import QNeuralNetwork, QTrainer
 from common.Common import LEVEL
 from common.Displayer import Displayer
+from generator.Generator import Generator
 from model.GameAI import Move
 from model.GameAI import GameAI
 
@@ -84,9 +86,15 @@ class Agent:
                 self.update_epsilon()
                 break
 
-game = GameAI(LEVEL)
+generator = Generator(9,1)
+level = generator.get_board()
+game = GameAI(level)
 displayer = Displayer(game)
 agent = Agent(input_size=np.array(game.board).flatten().size, hidden_size=128, output_size=4)  # 81 = 9x9 rozmiar planszy
 
 while True:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            exit()
     agent.train(game)
