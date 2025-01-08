@@ -60,7 +60,7 @@ class Game:
     def check_boxes_on_targets(self):
         return all(tile == 2 for _, tile in zip(self.targets, [self.board[x][y] for x, y in self.targets]))
 
-    def play_step(self):
+    def play_step(self, score):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -79,35 +79,35 @@ class Game:
                     self.reset_game()
 
         self.is_completed = self.check_boxes_on_targets()
-        displayer.update_ui()
+        displayer.update_ui(score)
 
         return self.is_completed
 
-def initialize_game(score, number_of_boxes):
+def initialize_game(number_of_boxes):
     generator = Generator(size=9, number_of_boxes=number_of_boxes)
     level = generator.get_board()
     game = Game(level)
-    displayer = Displayer(game, score)
+    displayer = Displayer(game)
     return game, displayer, generator
 
 if __name__ == "__main__":
     pygame.init()
     score = 1
-    number_of_boxes = 3
-    game, displayer, generator = initialize_game(score, number_of_boxes)
+    number_of_boxes = 1
+    game, displayer, generator = initialize_game(number_of_boxes)
     clock = pygame.time.Clock()
 
     while True:
-        game_over = game.play_step()
+        game_over = game.play_step(score)
 
         if game_over:
             score += 1
             if score % 5 == 0:
                 number_of_boxes += 1
             pygame.time.wait(3000)
-            game, displayer, generator = initialize_game(score, number_of_boxes)
+            game, displayer, generator = initialize_game(number_of_boxes)
 
-        displayer.update_ui()
+        displayer.update_ui(score)
         clock.tick(SPEED)
     pygame.quit()
     sys.exit()

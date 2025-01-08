@@ -20,6 +20,7 @@ class GameAI:
         self.total_moves = 0
         self.total_reward = 0
         self.max_moves = 20
+        self.is_completed = False
 
     def get_player_position(self):
         for y, row in enumerate(self.board):
@@ -84,7 +85,6 @@ class GameAI:
         return total_distance
 
     def adjust_reward_based_on_distance(self, previous_distance):
-        # Zabezpieczenie przed błędami związanymi z niemożliwością obliczenia odległości
         try:
             current_distance = self.calculate_total_distance()
             if current_distance < previous_distance:
@@ -126,19 +126,19 @@ class GameAI:
 
         if self.check_box_stuck_in_corner():
             self.total_reward -= 10
-            return self.total_reward, True, self.total_moves
+            return self.total_reward, True, self.total_moves, False
 
         if self.total_moves >= self.max_moves:
             self.total_reward -= 10
-            return self.total_reward, True, self.total_moves
+            return self.total_reward, True, self.total_moves, False
 
         done = self.check_all_boxes_on_targets()
         if done:
             self.total_reward += 10
-            return self.total_reward, done, self.total_moves
+            return self.total_reward, done, self.total_moves, True
 
 
-        return self.total_reward, done, self.total_moves
+        return self.total_reward, done, self.total_moves, False
 
     def reset(self):
         self.board = [row[:] for row in self.original_board]
