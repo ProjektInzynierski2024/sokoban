@@ -1,22 +1,25 @@
 import sys
-
 import pygame
 
-from common.Common import SPEED, LEVEL
+from common.Common import SPEED
 from common.Displayer import Displayer
 from generator.Generator import Generator
 
-generator = Generator(size=9, number_of_boxes=4)
-level = generator.get_board()
-
 class Game:
     def __init__(self, level_board):
-        self.board = level_board
+        self.initial_board = [row[:] for row in level_board]  # Make a copy of the initial level
+        self.board = [row[:] for row in level_board]  # Copy for gameplay
         self.player_position = self.get_player_position()
         self.width = len(self.board[0])
         self.height = len(self.board)
         self.targets = self.get_targets_positions()
+        self.is_completed = False
+        self.score = 0
 
+    def reset_game(self):
+        self.board = [row[:] for row in self.initial_board]  # Reset to initial board
+        self.player_position = self.get_player_position()
+        self.is_completed = False
 
     def get_player_position(self):
         for y, row in enumerate(self.board):
@@ -57,37 +60,54 @@ class Game:
     def check_boxes_on_targets(self):
         return all(tile == 2 for _, tile in zip(self.targets, [self.board[x][y] for x, y in self.targets]))
 
-    def play_step(self):
+    def play_step(self, score):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
-                    game.move((-1, 0))
+                    self.move((-1, 0))
                 elif event.key == pygame.K_DOWN:
-                    game.move((1, 0))
+                    self.move((1, 0))
                 elif event.key == pygame.K_LEFT:
-                    game.move((0, -1))
+                    self.move((0, -1))
                 elif event.key == pygame.K_RIGHT:
-                    game.move((0, 1))
+                    self.move((0, 1))
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if displayer.try_again_button.collidepoint(event.pos):
+                    self.reset_game()
 
-        displayer.update_ui()
+        self.is_completed = self.check_boxes_on_targets()
+        displayer.update_ui(score)
 
-        return game.check_boxes_on_targets()
+        return self.is_completed
 
-if __name__ == "__main__":
-    clock = pygame.time.Clock()
+def initialize_game(number_of_boxes):
+    generator = Generator(size=9, number_of_boxes=number_of_boxes)
+    level = generator.get_board()
     game = Game(level)
     displayer = Displayer(game)
+    return game, displayer, generator
+
+if __name__ == "__main__":
+    pygame.init()
+    score = 1
+    number_of_boxes = 1
+    game, displayer, generator = initialize_game(number_of_boxes)
+    clock = pygame.time.Clock()
 
     while True:
-        game_over = game.play_step()
-        if game_over:
-            break
-        clock.tick(SPEED)
+        game_over = game.play_step(score)
 
+        if game_over:
+            score += 1
+            if score % 5 == 0:
+                number_of_boxes += 1
+            pygame.time.wait(3000)
+            game, displayer, generator = initialize_game(number_of_boxes)
+
+        displayer.update_ui(score)
+        clock.tick(SPEED)
     pygame.quit()
     sys.exit()
-
-

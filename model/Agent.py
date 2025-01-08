@@ -1,7 +1,6 @@
 import pygame
 import torch
 from Model import QNeuralNetwork, QTrainer
-from common.Common import LEVEL
 from common.Displayer import Displayer
 from generator.Generator import Generator
 from model.GameAI import Move
@@ -27,6 +26,7 @@ class Agent:
         self.memory = deque(maxlen=100_000_000)
         self.batch_size = 128
         self.n_games = 0
+        self.game_score = 0
 
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
@@ -67,9 +67,9 @@ class Agent:
             action = self.select_action(state_old)
 
             move = [Move.LEFT, Move.UP, Move.DOWN, Move.RIGHT][action]
-            reward, done, score = game.play_step(move)
+            reward, done, moves, success = game.play_step(move)
 
-            displayer.update_ui()
+            displayer.update_ui(self.game_score)
 
             state_new = self.get_state(game)
 
@@ -78,9 +78,12 @@ class Agent:
 
             if done:
                 self.train_long_memory()
-
-                print(f'Gra: {self.n_games + 1}, Liczba ruchów: {score}, Nagroda: {reward}')
-
+                print(f'Gra: {self.n_games + 1}, Liczba ruchów: {moves}, Nagroda: {reward}')
+                if success:
+                    self.game_score += 1
+                    game.is_completed = True
+                    displayer.update_ui(self.game_score)
+                    game.is_completed = False
                 game.reset()
                 self.n_games += 1
                 self.update_epsilon()
@@ -90,9 +93,9 @@ generator = Generator(9,1)
 level = generator.get_board()
 game = GameAI(level)
 displayer = Displayer(game)
-agent = Agent(input_size=np.array(game.board).flatten().size, hidden_size=128, output_size=4)  # 81 = 9x9 rozmiar planszy
-
+agent = Agent(input_size=np.array(game.board).flatten().size, hidden_size=128, output_size=4)
 while True:
+    pygame.init()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
