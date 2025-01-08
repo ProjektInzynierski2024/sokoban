@@ -3,17 +3,14 @@ import pygame
 import subprocess
 import os
 
-# Kolory
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
-GRAY = (200, 200, 200)
-BLUE = (100, 100, 255)
+GRAY = (232, 231, 227)
+VIOLET = (236, 171, 167)
 
-# Rozmiar ekranu
 SCREEN_WIDTH = 700
 SCREEN_HEIGHT = 700
 
-# Czcionka
 FONT_SIZE = 40
 
 
@@ -23,11 +20,7 @@ class Menu:
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption("Menu")
         self.font = pygame.font.Font(None, FONT_SIZE)
-
-        # Ścieżka do folderu z grafiką
         self.assets_path = os.path.abspath("common/images")
-
-        # Wczytywanie obrazów
         self.background = pygame.image.load(os.path.join(self.assets_path, "background.png"))
 
         self.options = [
@@ -41,7 +34,7 @@ class Menu:
         self.selected_option = 0
 
     def draw_menu(self):
-        # Rysowanie tła
+
         self.screen.blit(pygame.transform.scale(self.background, (SCREEN_WIDTH, SCREEN_HEIGHT)), (0, 0))
 
         for i, option in enumerate(self.options):
@@ -49,7 +42,7 @@ class Menu:
             text_width = text_surface.get_width()
             text_height = text_surface.get_height()
 
-            button_color = BLUE if i == self.selected_option else GRAY
+            button_color = VIOLET if i == self.selected_option else GRAY
             button_width = text_width + 40
             button_height = text_height + 20
             button_rect = pygame.Rect((SCREEN_WIDTH // 2 - button_width // 2, SCREEN_HEIGHT // 2 - 100 + i * 80 + 50),
@@ -83,7 +76,6 @@ class Menu:
                         self.selected_option = (self.selected_option + 1) % len(self.options)
                     elif event.key == pygame.K_RETURN:
                         self.actions[self.selected_option]()
-
 
 if __name__ == "__main__":
     menu = Menu()
