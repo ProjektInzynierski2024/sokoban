@@ -234,7 +234,7 @@ class Generator:
     def no_initial_deadlocks(self):
         for box in self.boxes:
             if box in self.corners and box not in self.targets:
-                return False  # Deadlocked in a corner
+                return False
             if not self.has_free_movement(box):
                 return False
         return True
@@ -264,19 +264,16 @@ class Generator:
         horizontal_free = 0
         vertical_free = 0
 
-        # Sprawdź horyzontalnie
         for dy, dx in [(0, -1), (0, -2), (0, 1), (0, 2)]:
             ny, nx = y + dy, x + dx
             if 0 <= ny < self.size and 0 <= nx < self.size and (self.board[ny][nx] == 0 or self.board[ny][nx] == 3):
                 horizontal_free += 1
 
-        # Sprawdź wertykalnie
         for dy, dx in [(-1, 0), (-2, 0), (1, 0), (2, 0)]:
             ny, nx = y + dy, x + dx
             if 0 <= ny < self.size and 0 <= nx < self.size and (self.board[ny][nx] == 0 or self.board[ny][nx] == 3):
                 vertical_free += 1
 
-        # Warunki
         if horizontal_free >= 3 and vertical_free >= 3:
             return True
 
