@@ -23,7 +23,7 @@ class Agent:
         self.epsilon = epsilon_start
         self.epsilon_min = epsilon_min
         self.epsilon_decay = epsilon_decay
-        self.memory = deque(maxlen=100_000_000)
+        self.memory = deque(maxlen=50_000)
         self.batch_size = 128
         self.n_games = 0
         self.game_score = 0
@@ -78,7 +78,7 @@ class Agent:
 
             if done:
                 self.train_long_memory()
-                print(f'Gra: {self.n_games + 1}, Liczba ruchów: {moves}, Nagroda: {reward}')
+                print(f"Gra: {self.n_games + 1}, Nagroda: {reward}, Ruchy: {moves}, Odległość: {game.calculate_total_distance()}, Epsilon: {self.epsilon}")
                 if success:
                     self.game_score += 1
                     game.is_completed = True
@@ -89,11 +89,17 @@ class Agent:
                 self.update_epsilon()
                 break
 
-generator = Generator(9,1)
-level = generator.get_board()
-game = GameAI(level)
-displayer = Displayer(game)
-agent = Agent(input_size=np.array(game.board).flatten().size, hidden_size=128, output_size=4)
+
+def generate_agent():
+    global generator, game, displayer, agent
+    generator = Generator(9, 1)
+    level = generator.get_board()
+    game = GameAI(level)
+    displayer = Displayer(game)
+    agent = Agent(input_size=np.array(game.board).flatten().size, hidden_size=128, output_size=4)
+
+
+generate_agent()
 while True:
     pygame.init()
     for event in pygame.event.get():
@@ -101,3 +107,5 @@ while True:
             pygame.quit()
             exit()
     agent.train(game)
+    if agent.epsilon < 0.95 and agent.game_score == 0:
+        generate_agent()

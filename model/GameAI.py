@@ -76,7 +76,7 @@ class GameAI:
         total_distance = 0
         for y, row in enumerate(self.board):
             for x, tile in enumerate(row):
-                if tile == 2:  # Skrzynia
+                if tile == 2:
                     min_distance = float('inf')
                     for target_y, target_x in self.targets:
                         distance = abs(y - target_y) + abs(x - target_x)
@@ -88,7 +88,7 @@ class GameAI:
         try:
             current_distance = self.calculate_total_distance()
             if current_distance < previous_distance:
-                return 3
+                return 10
             elif current_distance > previous_distance:
                 return -1.5
             return 0
@@ -108,6 +108,18 @@ class GameAI:
                 return True
         return False
 
+    def get_distance_to_nearest_box(self):
+        y, x = self.player_position
+        min_distance = float('inf')
+        for box_y, box_x in [(y, x) for y, row in enumerate(self.board) for x, tile in enumerate(row) if tile == 2]:
+            distance = abs(box_y - y) + abs(box_x - x)
+            min_distance = min(min_distance, distance)
+        return min_distance
+
+    def check_player_on_bomb(self):
+        y, x = self.player_position
+        return self.board[y][x] == 3
+
     def play_step(self, move):
         direction_map = {
             Move.UP: Direction.UP.value,
@@ -116,12 +128,20 @@ class GameAI:
             Move.RIGHT: Direction.RIGHT.value
         }
         previous_distance = self.calculate_total_distance()
+        previous_distance_to_box = self.get_distance_to_nearest_box()
         reward = self.move(direction_map[move])
-
         reward += self.adjust_reward_based_on_distance(previous_distance)
 
-        self.total_reward += reward
+        current_distance_to_box = self.get_distance_to_nearest_box()
+        if current_distance_to_box < previous_distance_to_box:
+            reward += 1
+        elif current_distance_to_box > previous_distance_to_box:
+            reward -= 0.5
 
+        if self.check_player_on_bomb():
+            reward -= 5
+
+        self.total_reward += reward
         self.total_moves += 1
 
         if self.check_box_stuck_in_corner():
@@ -134,7 +154,7 @@ class GameAI:
 
         done = self.check_all_boxes_on_targets()
         if done:
-            self.total_reward += 10
+            self.total_reward += 100
             return self.total_reward, done, self.total_moves, True
 
 
