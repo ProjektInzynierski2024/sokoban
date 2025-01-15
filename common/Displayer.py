@@ -1,5 +1,4 @@
 import pygame
-from sympy import gamma
 
 from common.Common import TILE_SIZE
 
