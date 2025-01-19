@@ -7,8 +7,8 @@ from generator.Generator import Generator
 
 class Game:
     def __init__(self, level_board):
-        self.initial_board = [row[:] for row in level_board]  # Make a copy of the initial level
-        self.board = [row[:] for row in level_board]  # Copy for gameplay
+        self.initial_board = [row[:] for row in level_board]
+        self.board = [row[:] for row in level_board]
         self.player_position = self.get_player_position()
         self.width = len(self.board[0])
         self.height = len(self.board)
@@ -17,7 +17,7 @@ class Game:
         self.score = 0
 
     def reset_game(self):
-        self.board = [row[:] for row in self.initial_board]  # Reset to initial board
+        self.board = [row[:] for row in self.initial_board]
         self.player_position = self.get_player_position()
         self.is_completed = False
 
@@ -28,31 +28,31 @@ class Game:
                     return y, x
 
     def get_targets_positions(self):
-        targets = []
-        for y, row in enumerate(self.board):
-            for x, tile in enumerate(row):
-                if tile == 3:
-                    targets.append((y, x))
-        return targets
+        return [(y, x) for y, row in enumerate(self.board) for x, tile in enumerate(row) if tile == 3]
 
     def move(self, direction):
         y, x = self.player_position
         direction_y, direction_x = direction
-
         new_y, new_x = y + direction_y, x + direction_x
         next_y, next_x = y + 2 * direction_y, x + 2 * direction_x
 
         if self.is_valid(new_y, new_x):
             if self.board[new_y][new_x] == 0 or self.board[new_y][new_x] == 3:
-                self.board[y][x] = 0 if (y, x) not in self.targets else 3
-                self.board[new_y][new_x] = 4
-                self.player_position = (new_y, new_x)
+                self.move_to_empty_or_target(new_x, new_y, x, y)
             elif self.board[new_y][new_x] == 2 and self.is_valid(next_y, next_x):
-                if self.board[next_y][next_x] in (0, 3):
-                    self.board[y][x] = 0 if (y, x) not in self.targets else 3
-                    self.board[new_y][new_x] = 4
-                    self.board[next_y][next_x] = 2
-                    self.player_position = (new_y, new_x)
+                self.move_box(new_x, new_y, next_x, next_y, x, y)
+
+    def move_to_empty_or_target(self, new_x, new_y, x, y):
+        self.board[y][x] = 0 if (y, x) not in self.targets else 3
+        self.board[new_y][new_x] = 4
+        self.player_position = (new_y, new_x)
+
+    def move_box(self, new_x, new_y, next_x, next_y, x, y):
+        if self.board[next_y][next_x] in (0, 3):
+            self.board[y][x] = 0 if (y, x) not in self.targets else 3
+            self.board[new_y][new_x] = 4
+            self.board[next_y][next_x] = 2
+            self.player_position = (new_y, new_x)
 
     def is_valid(self, y, x):
         return 0 <= y < len(self.board) and 0 <= x < len(self.board[0])
@@ -92,7 +92,7 @@ def initialize_game(number_of_boxes):
 
 if __name__ == "__main__":
     pygame.init()
-    score = 1
+    score = 0
     number_of_boxes = 1
     game, displayer, generator = initialize_game(number_of_boxes)
     clock = pygame.time.Clock()
@@ -102,12 +102,12 @@ if __name__ == "__main__":
 
         if game_over:
             score += 1
-            if score % 5 == 0:
+            if score % 3 == 0:
                 number_of_boxes += 1
             pygame.time.wait(3000)
             game, displayer, generator = initialize_game(number_of_boxes)
-
+        if score == 12:
+            pygame.quit()
+            sys.exit()
         displayer.update_ui(score)
         clock.tick(SPEED)
-    pygame.quit()
-    sys.exit()
