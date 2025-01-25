@@ -1,11 +1,4 @@
-import sys
-
-import pygame
-
-from common.Common import SPEED, LEVEL
-from common.Displayer import Displayer
 from enum import Enum
-
 
 class GameAI:
     def __init__(self, level_board):
@@ -14,12 +7,13 @@ class GameAI:
         self.player_position = self.get_player_position()
         self.width = len(self.board[0])
         self.height = len(self.board)
+        self.boxes = self.get_boxes_positions()
         self.targets = self.get_targets_positions()
         self.corners = self.get_corners()
         self.visited_positions = set()
         self.total_moves = 0
-        self.total_reward = 0
-        self.max_moves = 20
+        self.reward = 0
+        self.max_moves = 10
         self.is_completed = False
 
     def get_player_position(self):
@@ -29,71 +23,26 @@ class GameAI:
                     return y, x
 
     def get_targets_positions(self):
-        targets = []
-        for y, row in enumerate(self.board):
-            for x, tile in enumerate(row):
-                if tile == 3:
-                    targets.append((y, x))
-        return targets
+        return [(y, x) for y, row in enumerate(self.board) for x, tile in enumerate(row) if tile == 3]
+
+    def get_boxes_positions(self):
+        return [(y, x) for y, row in enumerate(self.board) for x, tile in enumerate(row) if tile == 2]
 
     def get_corners(self):
         corners = []
         for y, row in enumerate(self.board):
             for x, tile in enumerate(row):
-                if self.board[y][x] == 0 and (
-                        (self.board[y - 1][x] == 1 and self.board[y][x - 1] == 1) or
-                        (self.board[y - 1][x] == 1 and self.board[y][x + 1] == 1) or
-                        (self.board[y + 1][x] == 1 and self.board[y][x - 1] == 1) or
-                        (self.board[y + 1][x] == 1 and self.board[y][x + 1] == 1)
-                ):
+                if self.board[y][x] == 0 and self.is_corner(x, y):
                     corners.append((y, x))
         return corners
 
-    def move(self, direction):
-        y, x = self.player_position
-        direction_y, direction_x = direction
-
-        new_y, new_x = y + direction_y, x + direction_x
-        next_y, next_x = y + 2 * direction_y, x + 2 * direction_x
-
-        reward = 0
-        if self.is_valid(new_y, new_x):
-            if self.board[new_y][new_x] == 0 or self.board[new_y][new_x] == 3:
-                self.board[y][x] = 0 if (y, x) not in self.targets else 3
-                self.board[new_y][new_x] = 4
-                self.player_position = (new_y, new_x)
-            elif self.board[new_y][new_x] == 2 and self.is_valid(next_y, next_x):
-                if self.board[next_y][next_x] in (0, 3):
-                    self.board[y][x] = 0 if (y, x) not in self.targets else 3
-                    self.board[new_y][new_x] = 4
-                    self.board[next_y][next_x] = 2
-                    self.player_position = (new_y, new_x)
-                    reward += 1
-
-        return reward
-
-    def calculate_total_distance(self):
-        total_distance = 0
-        for y, row in enumerate(self.board):
-            for x, tile in enumerate(row):
-                if tile == 2:
-                    min_distance = float('inf')
-                    for target_y, target_x in self.targets:
-                        distance = abs(y - target_y) + abs(x - target_x)
-                        min_distance = min(min_distance, distance)
-                    total_distance += min_distance
-        return total_distance
-
-    def adjust_reward_based_on_distance(self, previous_distance):
-        try:
-            current_distance = self.calculate_total_distance()
-            if current_distance < previous_distance:
-                return 10
-            elif current_distance > previous_distance:
-                return -1.5
-            return 0
-        except Exception as e:
-            return 0
+    def is_corner(self, x, y):
+        return (
+                (self.board[y - 1][x] == 1 and self.board[y][x - 1] == 1) or
+                (self.board[y - 1][x] == 1 and self.board[y][x + 1] == 1) or
+                (self.board[y + 1][x] == 1 and self.board[y][x - 1] == 1) or
+                (self.board[y + 1][x] == 1 and self.board[y][x + 1] == 1)
+        )
 
     def is_valid(self, y, x):
         return 0 <= y < len(self.board) and 0 <= x < len(self.board[0])
@@ -108,17 +57,68 @@ class GameAI:
                 return True
         return False
 
-    def get_distance_to_nearest_box(self):
+    def move(self, direction):
         y, x = self.player_position
-        min_distance = float('inf')
-        for box_y, box_x in [(y, x) for y, row in enumerate(self.board) for x, tile in enumerate(row) if tile == 2]:
-            distance = abs(box_y - y) + abs(box_x - x)
-            min_distance = min(min_distance, distance)
-        return min_distance
+        direction_y, direction_x = direction
+        new_y, new_x = y + direction_y, x + direction_x
+        next_y, next_x = y + 2 * direction_y, x + 2 * direction_x
+
+        if self.is_valid(new_y, new_x):
+            if self.board[new_y][new_x] == 0 or self.board[new_y][new_x] == 3:
+                return self.move_to_empty_or_target(new_x, new_y, x, y)
+            elif self.board[new_y][new_x] == 2 and self.is_valid(next_y, next_x):
+                return self.move_box(new_x, new_y, next_x, next_y, x, y)
+
+        return -5
+
+    def move_to_empty_or_target(self, new_x, new_y, x, y):
+        self.board[y][x] = 0 if (y, x) not in self.targets else 3
+        self.board[new_y][new_x] = 4
+        self.player_position = (new_y, new_x)
+        return 0
+
+    def move_box(self, new_x, new_y, next_x, next_y, x, y):
+        if self.board[next_y][next_x] in (0, 3):
+            self.board[y][x] = 0 if (y, x) not in self.targets else 3
+            self.board[new_y][new_x] = 4
+            self.board[next_y][next_x] = 2
+            self.player_position = (new_y, new_x)
+            return 1
+        else:
+            return 0
+
+    def get_distance_between_box_and_target(self):
+        box_y, box_x = self.boxes[0]
+        target_y, target_x = self.targets[0]
+        return abs(box_y - target_y) + abs(box_x - target_x)
+
+    def adjust_reward_based_on_distance_box_and_target(self, previous_distance, current_distance):
+        if current_distance < previous_distance:
+            return 10
+        elif current_distance > previous_distance:
+            return -10
+        else:
+            return 0
+
+    def get_distance_between_box_and_player(self):
+        player_y, player_x = self.player_position
+        box_y, box_x = self.boxes[0]
+        return abs(box_y - player_y) + abs(box_x - player_x)
+
+    def adjust_reward_based_on_distance_box_and_player(self, previous_distance, current_distance):
+        if current_distance < previous_distance:
+            return 5
+        elif current_distance > previous_distance:
+            return -5
+        else:
+            return 0
 
     def check_player_on_bomb(self):
         y, x = self.player_position
-        return self.board[y][x] == 3
+        if self.board[y][x] == 3:
+            return -5
+        else:
+            return 0
 
     def play_step(self, move):
         direction_map = {
@@ -127,45 +127,34 @@ class GameAI:
             Move.LEFT: Direction.LEFT.value,
             Move.RIGHT: Direction.RIGHT.value
         }
-        previous_distance = self.calculate_total_distance()
-        previous_distance_to_box = self.get_distance_to_nearest_box()
-        reward = self.move(direction_map[move])
-        reward += self.adjust_reward_based_on_distance(previous_distance)
-
-        current_distance_to_box = self.get_distance_to_nearest_box()
-        if current_distance_to_box < previous_distance_to_box:
-            reward += 1
-        elif current_distance_to_box > previous_distance_to_box:
-            reward -= 0.5
-
-        if self.check_player_on_bomb():
-            reward -= 5
-
-        self.total_reward += reward
+        reward = 0
+        previous_box_and_target_distance = self.get_distance_between_box_and_target()
+        previous_box_and_player_distance = self.get_distance_between_box_and_player()
+        reward += self.move(direction_map[move])
+        current_box_and_target_distance = self.get_distance_between_box_and_target()
+        current_box_and_player_distance = self.get_distance_between_box_and_player()
+        reward += self.adjust_reward_based_on_distance_box_and_target(previous_box_and_target_distance, current_box_and_target_distance)
+        reward += self.adjust_reward_based_on_distance_box_and_player(previous_box_and_player_distance, current_box_and_player_distance)
+        reward += self.check_player_on_bomb()
         self.total_moves += 1
+        self.reward += reward
+        self.boxes = self.get_boxes_positions()
+        if self.check_box_stuck_in_corner() or self.total_moves >= self.max_moves:
+            self.reward -= 20
+            return self.reward, True, self.total_moves, False
 
-        if self.check_box_stuck_in_corner():
-            self.total_reward -= 10
-            return self.total_reward, True, self.total_moves, False
+        if self.check_all_boxes_on_targets():
+            self.reward += 100
+            return self.reward, True, self.total_moves, True
 
-        if self.total_moves >= self.max_moves:
-            self.total_reward -= 10
-            return self.total_reward, True, self.total_moves, False
-
-        done = self.check_all_boxes_on_targets()
-        if done:
-            self.total_reward += 100
-            return self.total_reward, done, self.total_moves, True
-
-
-        return self.total_reward, done, self.total_moves, False
+        return self.reward, False, self.total_moves, False
 
     def reset(self):
         self.board = [row[:] for row in self.original_board]
         self.player_position = self.get_player_position()
         self.targets = self.get_targets_positions()
         self.total_moves = 0
-        self.total_reward = 0
+        self.reward = 0
 
 class Move(Enum):
     LEFT = [1,0,0,0]

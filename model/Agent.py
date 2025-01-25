@@ -1,6 +1,6 @@
 import pygame
 import torch
-from Model import QNeuralNetwork, QTrainer
+from Model import DeepQLearningModel, DeepQTrainer
 from common.Displayer import Displayer
 from generator.Generator import Generator
 from model.GameAI import Move
@@ -17,25 +17,25 @@ from collections import deque
 
 class Agent:
     def __init__(self, input_size, hidden_size, output_size, gamma=0.9, learning_rate=0.001, epsilon_start=1.0,
-                 epsilon_min=0.01, epsilon_decay=0.995):
-        self.model = QNeuralNetwork(input_size, hidden_size, output_size)
-        self.trainer = QTrainer(self.model, learning_rate, gamma)
+                 epsilon_min=0.01, epsilon_multiplier=0.995):
+        self.model = DeepQLearningModel(input_size, hidden_size, output_size)
+        self.trainer = DeepQTrainer(self.model, learning_rate, gamma)
         self.epsilon = epsilon_start
         self.epsilon_min = epsilon_min
-        self.epsilon_decay = epsilon_decay
-        self.memory = deque(maxlen=50_000)
+        self.epsilon_multiplier = epsilon_multiplier
+        self.experience_buffer = deque(maxlen=50_000)
         self.batch_size = 128
         self.n_games = 0
         self.game_score = 0
 
-    def remember(self, state, action, reward, next_state, done):
-        self.memory.append((state, action, reward, next_state, done))
+    def store_experience(self, state, action, reward, next_state, done):
+        self.experience_buffer.append((state, action, reward, next_state, done))
 
-    def get_state(self, game):
+    def extract_game_state(self, game):
         state = np.array(game.board).flatten()
         return state
 
-    def select_action(self, state):
+    def choose_action(self, state):
         if random.random() < self.epsilon:
             return random.choice([0, 1, 2, 3])
         state_tensor = torch.tensor(state, dtype=torch.float)
@@ -43,42 +43,36 @@ class Agent:
             prediction = self.model(state_tensor)
         return torch.argmax(prediction).item()
 
-    def train_long_memory(self):
-        if len(self.memory) < self.batch_size:
-            mini_sample = self.memory
+    def train_on_experiences(self):
+        if len(self.experience_buffer) < self.batch_size:
+            mini_sample = self.experience_buffer
         else:
-            mini_sample = random.sample(self.memory, self.batch_size)
+            mini_sample = random.sample(self.experience_buffer, self.batch_size)
 
         states, actions, rewards, next_states, dones = zip(*mini_sample)
-        self.trainer.train_step(states, actions, rewards, next_states, dones)
+        self.trainer.optimize_model(states, actions, rewards, next_states, dones)
 
-    def train_short_memory(self, state, action, reward, next_state, done):
-        self.trainer.train_step(state, action, reward, next_state, done)
+    def train_on_single_experience(self, state, action, reward, next_state, done):
+        self.trainer.optimize_model(state, action, reward, next_state, done)
 
     def update_epsilon(self):
         if self.epsilon > self.epsilon_min:
-            self.epsilon *= self.epsilon_decay
+            self.epsilon *= self.epsilon_multiplier
 
-    def train(self, game):
+    def train_agent(self, game):
         while True:
-
-            state_old = self.get_state(game)
-
-            action = self.select_action(state_old)
-
+            current_state = self.extract_game_state(game)
+            action = self.choose_action(current_state)
             move = [Move.LEFT, Move.UP, Move.DOWN, Move.RIGHT][action]
             reward, done, moves, success = game.play_step(move)
-
             displayer.update_ui(self.game_score)
-
-            state_new = self.get_state(game)
-
-            self.remember(state_old, action, reward, state_new, done)
-            self.train_short_memory(state_old, action, reward, state_new, done)
+            next_state = self.extract_game_state(game)
+            self.store_experience(current_state, action, reward, next_state, done)
+            self.train_on_single_experience(current_state, action, reward, next_state, done)
 
             if done:
-                self.train_long_memory()
-                print(f"Gra: {self.n_games + 1}, Nagroda: {reward}, Ruchy: {moves}, Odległość: {game.calculate_total_distance()}, Epsilon: {self.epsilon}")
+                self.train_on_experiences()
+                print(f"Gra: {self.n_games + 1}, Nagroda: {reward}, Ruchy: {moves}, Epsilon: {self.epsilon}")
                 if success:
                     self.game_score += 1
                     game.is_completed = True
@@ -96,7 +90,7 @@ def generate_agent():
     level = generator.get_board()
     game = GameAI(level)
     displayer = Displayer(game)
-    agent = Agent(input_size=np.array(game.board).flatten().size, hidden_size=128, output_size=4)
+    agent = Agent(input_size=np.array(game.board).flatten().size, hidden_size=256, output_size=4)
 
 
 generate_agent()
@@ -106,6 +100,6 @@ while True:
         if event.type == pygame.QUIT:
             pygame.quit()
             exit()
-    agent.train(game)
+    agent.train_agent(game)
     if agent.epsilon < 0.95 and agent.game_score == 0:
         generate_agent()
