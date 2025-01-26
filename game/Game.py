@@ -102,11 +102,11 @@ if __name__ == "__main__":
 
         if game_over:
             score += 1
-            if score % 3 == 0:
+            if score % 5 == 0:
                 number_of_boxes += 1
             pygame.time.wait(3000)
             game, displayer, generator = initialize_game(number_of_boxes)
-        if score == 12:
+        if score == 25:
             pygame.quit()
             sys.exit()
         displayer.update_ui(score)

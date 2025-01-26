@@ -2,7 +2,7 @@ from enum import Enum
 
 class GameAI:
     def __init__(self, level_board):
-        self.original_board = [row[:] for row in level_board]
+        self.initial_board = [row[:] for row in level_board]
         self.board = [row[:] for row in level_board]
         self.player_position = self.get_player_position()
         self.width = len(self.board[0])
@@ -10,10 +10,9 @@ class GameAI:
         self.boxes = self.get_boxes_positions()
         self.targets = self.get_targets_positions()
         self.corners = self.get_corners()
-        self.visited_positions = set()
         self.total_moves = 0
         self.reward = 0
-        self.max_moves = 10
+        self.max_moves = 20
         self.is_completed = False
 
     def get_player_position(self):
@@ -150,7 +149,7 @@ class GameAI:
         return self.reward, False, self.total_moves, False
 
     def reset(self):
-        self.board = [row[:] for row in self.original_board]
+        self.board = [row[:] for row in self.initial_board]
         self.player_position = self.get_player_position()
         self.targets = self.get_targets_positions()
         self.total_moves = 0
