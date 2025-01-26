@@ -25,7 +25,7 @@ class Generator:
 
                 self.bombs = self.generate_bombs_on_random_positions(required_number_of_bombs=number_of_boxes)
                 self.boxes = self.generate_boxes_on_random_positions(required_number_of_boxes=number_of_boxes)
-                self.player = self.generate_soldier_on_random_position()
+                self.soldier = self.generate_soldier_on_random_position()
 
                 if self.is_solvable():
                     break
@@ -39,11 +39,11 @@ class Generator:
 
     def generate_empty_board_surrounded_by_walls(self):
         return [[
-            1 if x == self.first_index or
+            Field.WALL.value if x == self.first_index or
             y == self.first_index or
             x == self.last_index or
             y == self.last_index
-            else 0
+            else Field.AREA.value
             for x in range(self.size)]
             for y in range(self.size)]
 
@@ -106,7 +106,7 @@ class Generator:
             while start != end:
                 if (
                         self.board[start][x] == Field.AREA.value or
-                        self.board[start][x] == Field.BOX.value
+                        self.board[start][x] == Field.BOMB.value
                 ):
                     counter = counter + 1
                 else:
@@ -118,13 +118,13 @@ class Generator:
             while start != end:
                 if(
                         self.board[y][start] == Field.AREA.value or
-                        self.board[y][start] == Field.BOX.value
+                        self.board[y][start] == Field.BOMB.value
                 ):
                     counter = counter + 1
                 else :
                     counter = 0
 
-        return counter == self.number_of_boxes
+        return counter == self.number_of_boxes + 1
 
 
     def generate_soldier_on_random_position(self):
@@ -197,7 +197,7 @@ class Generator:
 
     def is_solvable_for_all_boxes(self):
         for box in self.boxes:
-            if not self.soldier_with_a_box_can_find_path_to_a_target(self.player, box):
+            if not self.soldier_with_a_box_can_find_path_to_a_target(self.soldier, box):
                 return False
         return True
 
