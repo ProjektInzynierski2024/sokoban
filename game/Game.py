@@ -102,6 +102,7 @@ if __name__ == "__main__":
 
         if game_over:
             score += 1
+            displayer.update_ui(score)
             if score % 5 == 0:
                 number_of_boxes += 1
             pygame.time.wait(3000)
