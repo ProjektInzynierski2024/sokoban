@@ -139,7 +139,7 @@ class GameAI:
         self.reward += reward
         self.boxes = self.get_boxes_positions()
         if self.check_box_stuck_in_corner() or self.total_moves >= self.max_moves:
-            self.reward -= 20
+            self.reward -= 100
             return self.reward, True, self.total_moves, False
 
         if self.check_all_boxes_on_targets():
