@@ -6,7 +6,7 @@ import os
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 GRAY = (232, 231, 227)
-VIOLET = (236, 171, 167)
+PINK = (236, 171, 167)
 
 SCREEN_WIDTH = 700
 SCREEN_HEIGHT = 700
@@ -42,7 +42,7 @@ class Menu:
             text_width = text_surface.get_width()
             text_height = text_surface.get_height()
 
-            button_color = VIOLET if i == self.selected_option else GRAY
+            button_color = PINK if i == self.selected_option else GRAY
             button_width = text_width + 40
             button_height = text_height + 20
             button_rect = pygame.Rect((SCREEN_WIDTH // 2 - button_width // 2, SCREEN_HEIGHT // 2 - 100 + i * 80 + 50),

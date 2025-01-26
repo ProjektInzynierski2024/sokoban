@@ -24,7 +24,7 @@ class Agent:
         self.epsilon_min = epsilon_min
         self.epsilon_multiplier = epsilon_multiplier
         self.experience_buffer = deque(maxlen=50_000)
-        self.batch_size = 128
+        self.batch_size = 256
         self.n_games = 0
         self.game_score = 0
 
@@ -72,7 +72,6 @@ class Agent:
 
             if done:
                 self.train_on_experiences()
-                print(f"Gra: {self.n_games + 1}, Nagroda: {reward}, Ruchy: {moves}, Epsilon: {self.epsilon}")
                 if success:
                     self.game_score += 1
                     game.is_completed = True
@@ -92,14 +91,14 @@ def generate_agent():
     displayer = Displayer(game)
     agent = Agent(input_size=np.array(game.board).flatten().size, hidden_size=256, output_size=4)
 
-
-generate_agent()
-while True:
-    pygame.init()
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            exit()
-    agent.train_agent(game)
-    if agent.epsilon < 0.95 and agent.game_score == 0:
-        generate_agent()
+if __name__ == "__main__":
+    generate_agent()
+    while True:
+        pygame.init()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+        agent.train_agent(game)
+        if agent.epsilon < 0.95 and agent.game_score == 0:
+            generate_agent()
