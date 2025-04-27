@@ -68,7 +68,7 @@ Players can select the desired mode from the startup menu.
 - `DeepQTrainer.py` — model training and optimization.
 
 ## Demo
-### Manual Game
+### Manual Game:
 ![manual_game.gif](common%2Fimages%2Fmanual_game.gif)
 ### AI Agent Training:
 ![agent_training.gif](common%2Fimages%2Fagent_training.gif)
